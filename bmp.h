@@ -25,6 +25,13 @@ struct bitmapInfoHeader {
 };
 #pragma pack(pop)
 
+struct pixel {
+	unsigned char A;
+	unsigned char R;
+	unsigned char G;
+	unsigned char B;
+};
+
 
 struct bitmap {
 	struct bitmapFileHeader bfh;
