@@ -42,4 +42,5 @@ struct bitmap {
 
 int readBitmap(struct bitmap *bmp, const char* path);
 int freeBitmap(struct bitmap *bmp);
+int saveBitmap(const struct bitmap *bmp, const char *path);
 #endif

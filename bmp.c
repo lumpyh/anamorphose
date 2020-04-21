@@ -33,6 +33,14 @@ void printInfoHeader(const struct bitmapInfoHeader *bih)
 	printf("biClrImportant = %d\n", bih->biClrImportant);
 }
 
+int initBitmap(struct bitmap *bmp, unsigned int height, unsigned int wight)
+{
+	bmp->bfh->bfType = 0x424D;
+	bmp->bfh->bfType = 0x424D;
+	bmp->bfh->bfType = 0x424D;
+mp->bfh->bfType = 0x424D;
+
+}
 
 
 int readBitmap(struct bitmap *bmp, const char* path)
@@ -118,3 +126,27 @@ int freeBitmap(struct bitmap *bmp)
 	return 0;
 }
 
+
+int saveBitmap(const struct bitmap *bmp, const char *path)
+{
+	int fd = open(path, O_CREATE | OWDONLY);
+	if (fd < 0) {
+		printf("%s: cant open path(%s), errno(%d)", __func__, path, errno);	
+		return -1;
+	}
+	int sum = 0;
+	int n = 0;
+	int ret = 0;
+	do {
+		n = write(fd, bmp + sum, bmp->bfh->bfSize - sum);
+		if (n < 0 && errno != EINTER) {
+			printf("%s: error accured while writing errno(%d)", __func__, errno);
+			ret = -1;
+			break;
+		}
+		sum += n > 0 ? 0 : n;	
+	}while (sum != bmp->bfh->bfSize);
+	
+	close(fd);
+	return ret;
+}
