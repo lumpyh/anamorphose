@@ -34,8 +34,7 @@ struct pixel {
 
 
 struct bitmap {
-	struct bitmapFileHeader bfh;
-	struct bitmapInfoHeader bih;
+	struct bitmapFileHeader bfh; struct bitmapInfoHeader bih;
 	unsigned char *reserved;
 	uint32_t *data;
 };
