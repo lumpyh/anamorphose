@@ -26,10 +26,10 @@ struct bitmapInfoHeader {
 #pragma pack(pop)
 
 struct pixel {
-	unsigned char A;
-	unsigned char R;
-	unsigned char G;
 	unsigned char B;
+	unsigned char G;
+	unsigned char R;
+	unsigned char A;
 };
 
 
@@ -41,6 +41,7 @@ struct bitmap {
 };
 
 int readBitmap(struct bitmap *bmp, const char* path);
+int initBitmap(struct bitmap *bmp, unsigned int height, unsigned int width);
 int freeBitmap(struct bitmap *bmp);
 int saveBitmap(const struct bitmap *bmp, const char *path);
 #endif

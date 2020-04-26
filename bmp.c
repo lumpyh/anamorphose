@@ -16,7 +16,6 @@ void printFileHeader( const struct bitmapFileHeader *bfh)
 	printf("bfOffBits %d\n", bfh->bfOffBits);
 }
 
-
 void printInfoHeader(const struct bitmapInfoHeader *bih)
 {
 	printf("Infoheader\n");
@@ -33,15 +32,33 @@ void printInfoHeader(const struct bitmapInfoHeader *bih)
 	printf("biClrImportant = %d\n", bih->biClrImportant);
 }
 
-int initBitmap(struct bitmap *bmp, unsigned int height, unsigned int wight)
+int initBitmap(struct bitmap *bmp, unsigned int height, unsigned int width)
 {
-	bmp->bfh->bfType = 0x424D;
-	bmp->bfh->bfType = 0x424D;
-	bmp->bfh->bfType = 0x424D;
-mp->bfh->bfType = 0x424D;
+	bmp->bfh.bfType = 0x4D42;
+	bmp->bfh.bfSize = sizeof(bmp->bfh) + sizeof(bmp->bih) + height * width * sizeof(uint32_t);
+	bmp->bfh.bfReserved = 0;
+	bmp->bfh.bfOffBits = sizeof(bmp->bfh) + sizeof(bmp->bih);
 
+	bmp->bih.biSize = sizeof(bmp->bih);
+	bmp->bih.biWidth = width;
+	bmp->bih.biHeight = height;
+	bmp->bih.biPlanes = 1;
+	bmp->bih.biBitCount = 32;
+	bmp->bih.biCompression = 0; //BI_RGB no compression
+	bmp->bih.biSizeImage = 0; 
+	bmp->bih.biXPelsPerMeter = 20; //TODO
+	bmp->bih.biYPelsPerMeter = 20; //TODO
+	bmp->bih.biClrUsed = 0;
+	bmp->bih.biClrImportant = 0;
+
+	bmp->reserved = NULL;
+	bmp->data = malloc(height * width * sizeof(uint32_t));
+	if (bmp->data == NULL) {
+		printf("%s: cant allocate mem for bitmap data errno=%d\n", __func__, errno);
+		return -1;
+	}	
+	return 0;
 }
-
 
 int readBitmap(struct bitmap *bmp, const char* path)
 {
@@ -126,10 +143,9 @@ int freeBitmap(struct bitmap *bmp)
 	return 0;
 }
 
-
 int saveBitmap(const struct bitmap *bmp, const char *path)
 {
-	int fd = open(path, O_CREATE | OWDONLY);
+	int fd = open(path, O_CREAT | O_WRONLY);
 	if (fd < 0) {
 		printf("%s: cant open path(%s), errno(%d)", __func__, path, errno);	
 		return -1;
@@ -137,15 +153,42 @@ int saveBitmap(const struct bitmap *bmp, const char *path)
 	int sum = 0;
 	int n = 0;
 	int ret = 0;
+
+	n = write(fd, &bmp->bfh, sizeof(bmp->bfh));
+	if (n != sizeof(bmp->bfh)) {
+		printf("%s: failed to write the fileheader n=%d (if n < 0 -> errno=%d)\n", __func__, n, errno);
+	}
+	
+	n = write(fd, &bmp->bih, sizeof(bmp->bih));
+	if (n != sizeof(bmp->bih)) {
+		printf("%s: failed to write the infoheader n=%d (if n < 0 -> errno=%d)\n", __func__, n, errno);
+	}
+
+	int len = bmp->bfh.bfOffBits - sizeof(bmp->bfh) - sizeof(bmp->bih);
+	if (bmp->reserved != NULL) {
+		do {
+			n = write(fd, ((char *)bmp->reserved) + sum, len - sum);
+			if (n < 0 && errno != EINTR) {
+				printf("%s: error accured while writing reserved errno(%d)", __func__, errno);
+				ret = -1;
+				break;
+			}
+			sum += n > 0 ? n : 0;	
+		}while (sum < len);
+	}
+		
+	len = bmp->bfh.bfSize - bmp->bfh.bfOffBits; 	
+	
 	do {
-		n = write(fd, bmp + sum, bmp->bfh->bfSize - sum);
-		if (n < 0 && errno != EINTER) {
+		n = write(fd, bmp->data + sum, len - sum);
+		printf("n = %d\n", n); 
+		if (n < 0 && errno != EINTR) {
 			printf("%s: error accured while writing errno(%d)", __func__, errno);
 			ret = -1;
 			break;
 		}
-		sum += n > 0 ? 0 : n;	
-	}while (sum != bmp->bfh->bfSize);
+		sum += n > 0 ? n : 0;	
+	}while (sum < len);
 	
 	close(fd);
 	return ret;
