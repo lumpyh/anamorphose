@@ -78,6 +78,9 @@ int readBitmap(struct bitmap *bmp, const char* path)
 		ret = -1;
 		goto close;
 	}
+	posCount += n;
+	printf("red %d of bfh data bytes\n", n);
+	printf("posCounter %d\n", posCount);
 	printFileHeader(&bmp->bfh);
 	//TODO BM in first two bytes
 
@@ -88,6 +91,8 @@ int readBitmap(struct bitmap *bmp, const char* path)
 		goto close;
 	}
 	posCount += n;
+	printf("red %d of bh data bytes\n", n);
+	printf("posCounter %d\n", posCount);
 	printInfoHeader(&bmp->bih);
 
 	int toRead = bmp->bfh.bfOffBits - posCount; 
@@ -158,11 +163,14 @@ int saveBitmap(const struct bitmap *bmp, const char *path)
 	if (n != sizeof(bmp->bfh)) {
 		printf("%s: failed to write the fileheader n=%d (if n < 0 -> errno=%d)\n", __func__, n, errno);
 	}
+	printf("wrote %d of bfh data bytes\n", n);
+
 	
 	n = write(fd, &bmp->bih, sizeof(bmp->bih));
 	if (n != sizeof(bmp->bih)) {
 		printf("%s: failed to write the infoheader n=%d (if n < 0 -> errno=%d)\n", __func__, n, errno);
 	}
+	printf("wrote %d of bih data bytes\n", n);
 
 	int len = bmp->bfh.bfOffBits - sizeof(bmp->bfh) - sizeof(bmp->bih);
 	if (bmp->reserved != NULL) {
@@ -176,9 +184,10 @@ int saveBitmap(const struct bitmap *bmp, const char *path)
 			sum += n > 0 ? n : 0;	
 		}while (sum < len);
 	}
+	printf("wrote %d of reserved data bytes\n", sum);
 		
 	len = bmp->bfh.bfSize - bmp->bfh.bfOffBits; 	
-	
+	sum = 0;
 	do {
 		n = write(fd, bmp->data + sum, len - sum);
 		printf("n = %d\n", n); 
@@ -189,6 +198,7 @@ int saveBitmap(const struct bitmap *bmp, const char *path)
 		}
 		sum += n > 0 ? n : 0;	
 	}while (sum < len);
+	printf("wrote %d of data bytes\n", sum);
 	
 	close(fd);
 	return ret;
